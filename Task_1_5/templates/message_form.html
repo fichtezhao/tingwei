@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Message Board</title>
+</head>
+<body>
+    <h1>Post a message</h1>
+    <form action="{{ url_for('form') }}" method="POST">
+        <p>Username: <input type='text' name="username"></p>
+
+        <p>Email: <input type="text" name="email"></p>
+        
+        <p>Message: </p>
+        <textarea name="message" row="5" col="50"></textarea>
+        <input type="submit" value="Post Now">
+    </form>
+    
+
+</body>
+</html>
