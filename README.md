@@ -5,4 +5,5 @@ this is regarding git daily operation training and practice
 >>>>
 https://tortoisegit.org/docs/tortoisegit/tgit-dug.html
 >>cmd line daily
->>https://git-scm.com/docs/everyday
+>>>>
+https://git-scm.com/docs/everyday
