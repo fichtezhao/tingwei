@@ -1,140 +1,131 @@
+If you're preparing for a Singapore CTF (like those run by National University of Singapore or GovTech Singapore), you don’t need “academic cryptography” — you need practical attack skills + Python automation.
 
-Here’s a clear, practical tutorial on cryptography using Python, starting from basics and moving to real-world usage. I’ll keep it hands-on so you can actually use this in projects.
+Here’s a focused, hands-on tutorial roadmap with Python examples tailored for CTF crypto challenges.
 
-🔐 1. What is Cryptography?
+🧠 1. Core CTF Crypto Concepts (What You MUST Know)
 
-Cryptography is about:
+Most CTF crypto problems fall into these buckets:
 
-Confidentiality → keep data secret
-Integrity → ensure data isn’t altered
-Authentication → verify identity
+🔑 Classical Ciphers
+Caesar / ROT
+Vigenère
+Substitution
+🔐 Encoding / Obfuscation
+Base64, Base32
+Hex, binary
+XOR
+🧮 Modern Crypto (CTF-style weaknesses)
+RSA (small primes, bad padding)
+AES (ECB mode patterns)
+Hashes (MD5 collisions, brute force)
+🐍 2. Python Setup
 
-Two main types:
+Install useful libraries:
 
-Symmetric encryption (same key)
-Asymmetric encryption (public + private key)
-🧰 2. Setup (Python Library)
+pip install pycryptodome pwntools sympy
+🔓 3. Basic Tools You’ll Use Everywhere
+(1) Base64 Decode
+import base64
 
-Use the widely trusted library:
+cipher = "SGVsbG8gQ1RGIQ=="
+print(base64.b64decode(cipher).decode())
+(2) XOR Attack (VERY COMMON)
+def xor(data, key):
+    return bytes([b ^ key for b in data])
 
-pip install cryptography
-🔑 3. Symmetric Encryption (Fernet – Easiest Start)
+cipher = bytes.fromhex("1a0f1c")
+for k in range(256):
+    result = xor(cipher, k)
+    if b"flag" in result:
+        print(k, result)
 
-Fernet is high-level, safe, and beginner-friendly.
+👉 Used in MANY beginner/intermediate CTFs.
 
-Generate a key
-from cryptography.fernet import Fernet
+(3) Frequency Analysis (Breaking Substitution)
+from collections import Counter
 
-key = Fernet.generate_key()
-print(key)
-Encrypt data
-f = Fernet(key)
+text = "GSRH RH Z HVXIVG"
+print(Counter(text))
+🧠 4. RSA Attacks (VERY IMPORTANT)
 
-message = b"Secret message"
-encrypted = f.encrypt(message)
+Most Singapore CTF crypto challenges include RSA.
 
-print(encrypted)
-Decrypt data
-decrypted = f.decrypt(encrypted)
-print(decrypted.decode())
+📌 Case 1: Small n (Factorable)
+from sympy import factorint
 
-✔ Uses AES under the hood
-✔ Handles IV + padding automatically
+n = 3233
+factors = factorint(n)
+print(factors)
+📌 Case 2: Recover Private Key
 
-🔐 4. Hashing (Passwords, Integrity)
+d≡e−1(modϕ(n))
+d≡e
+−1
+(modϕ(n))
 
-Hashing is one-way (can’t decrypt).
+from Crypto.Util.number import inverse
 
-Example with SHA-256
+p = 61
+q = 53
+n = p * q
+phi = (p-1)*(q-1)
+e = 17
+
+d = inverse(e, phi)
+print(d)
+📌 Case 3: Decrypt Cipher
+c = 2790
+m = pow(c, d, n)
+print(m)
+🔐 5. AES Weakness (ECB Mode)
+Detect ECB via repeated blocks:
+from Crypto.Cipher import AES
+
+def detect_ecb(ciphertext):
+    blocks = [ciphertext[i:i+16] for i in range(0, len(ciphertext), 16)]
+    return len(blocks) != len(set(blocks))
+
+👉 If blocks repeat → ECB → vulnerable.
+
+🔑 6. Hash Cracking (Dictionary Attack)
 import hashlib
 
-password = "my_secure_password"
-hash_value = hashlib.sha256(password.encode()).hexdigest()
+target = "5d41402abc4b2a76b9719d911017c592"
 
-print(hash_value)
-Verify password
-input_password = "my_secure_password"
+wordlist = ["hello", "password", "flag"]
 
-if hashlib.sha256(input_password.encode()).hexdigest() == hash_value:
-    print("Match")
+for word in wordlist:
+    if hashlib.md5(word.encode()).hexdigest() == target:
+        print("Found:", word)
+⚔️ 7. Real CTF Workflow
 
-👉 In real apps, use bcrypt instead (more secure against brute force)
+When you see a challenge:
 
-🔑 5. Asymmetric Encryption (Public/Private Key)
+Step 1: Identify type
+Looks random? → encoding or XOR
+Numbers? → RSA
+Long hex? → AES / hash
+Step 2: Try quick wins
+Base64 decode
+XOR brute force
+Strings search (strings tool)
+Step 3: Automate with Python
+Never solve manually
+Write scripts fast
+🧰 8. Must-Know Tools for Singapore CTFs
+CyberChef → quick decoding
+pwntools → scripting
+Wireshark → if crypto + network
+John the Ripper → hashes
+🧪 9. Practice Platforms
 
-Used in:
+To match Singapore-level difficulty:
 
-HTTPS
-Digital signatures
-Secure key exchange
-Generate RSA keys
-from cryptography.hazmat.primitives.asymmetric import rsa
-
-private_key = rsa.generate_private_key(
-    public_exponent=65537,
-    key_size=2048
-)
-
-public_key = private_key.public_key()
-Encrypt with public key
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-
-message = b"Hello secure world"
-
-encrypted = public_key.encrypt(
-    message,
-    padding.OAEP(
-        mgf=padding.MGF1(algorithm=hashes.SHA256()),
-        algorithm=hashes.SHA256(),
-        label=None
-    )
-)
-Decrypt with private key
-decrypted = private_key.decrypt(
-    encrypted,
-    padding.OAEP(
-        mgf=padding.MGF1(algorithm=hashes.SHA256()),
-        algorithm=hashes.SHA256(),
-        label=None
-    )
-)
-
-print(decrypted.decode())
-✍️ 6. Digital Signatures (Authentication)
-Sign data
-signature = private_key.sign(
-    message,
-    padding.PSS(
-        mgf=padding.MGF1(hashes.SHA256()),
-        salt_length=padding.PSS.MAX_LENGTH
-    ),
-    hashes.SHA256()
-)
-Verify signature
-public_key.verify(
-    signature,
-    message,
-    padding.PSS(
-        mgf=padding.MGF1(hashes.SHA256()),
-        salt_length=padding.PSS.MAX_LENGTH
-    ),
-    hashes.SHA256()
-)
-
-✔ Ensures message is authentic and unchanged
-
-🔐 7. Best Practices (IMPORTANT)
-❌ Don’t implement crypto from scratch
-✅ Use trusted libraries like cryptography
-✅ Use Fernet for most app-level encryption
-✅ Use bcrypt / argon2 for passwords
-✅ Store keys securely (env vars, vaults)
-❌ Never hardcode keys in code
-🚀 8. Real-World Use Cases
-Secure API tokens
-Encrypting local files
-Password storage
-HTTPS (TLS uses these concepts)
-Blockchain & digital signatures
+CTFtime
+Hack The Box
+picoCTF
+🚀 10. Pro Tips (This matters a LOT)
+Learn to recognize patterns quickly
+Build your own Python snippet library
+Don’t overthink — most CTF crypto is intentionally broken
+Practice RSA attacks heavily (they show up ALL the time
